@@ -254,8 +254,13 @@ Vector3 AppView::unproject(const Vector2i& windowPosition, Float depth) const {
 }
 
 void AppView::keyPressEvent(KeyEvent& event) {
+
+    if(event.key() == KeyEvent::Key::S){
+        std::cout << "keyPressEvent KeyEvent::Key::S event received\n";
+    }
     /* Reset the transformation to the original view */
-    if(event.key() == KeyEvent::Key::NumZero) {
+    if(event.key() == KeyEvent::Key::Space) {
+        std::cout << "keyPressEvent KeyEvent::Key::Space event received\n";
         (*_cameraObject)
             .resetTransformation()
             .translate(Vector3::zAxis(5.0f))
@@ -265,10 +270,11 @@ void AppView::keyPressEvent(KeyEvent& event) {
         return;
 
     /* Axis-aligned view */
-    } else if(event.key() == KeyEvent::Key::NumOne ||
-              event.key() == KeyEvent::Key::NumThree ||
-              event.key() == KeyEvent::Key::NumSeven)
+    } else if(event.key() == KeyEvent::Key::W ||
+              event.key() == KeyEvent::Key::A ||
+              event.key() == KeyEvent::Key::D)
     {
+        std::cout << "keyPressEvent KeyEvent::Key::1 2 3 event received\n";
         /* Start with current camera translation with the rotation inverted */
         const Vector3 viewTranslation = _cameraObject->transformation().rotationScaling().inverted()*_cameraObject->transformation().translation();
 
@@ -276,11 +282,11 @@ void AppView::keyPressEvent(KeyEvent& event) {
         const Float multiplier = event.modifiers() & KeyEvent::Modifier::Ctrl ? -1.0f : 1.0f;
 
         Matrix4 transformation;
-        if(event.key() == KeyEvent::Key::NumSeven) /* Top/bottom */
+        if(event.key() == KeyEvent::Key::W) /* Top/bottom */
             transformation = Matrix4::rotationX(-90.0_degf*multiplier);
-        else if(event.key() == KeyEvent::Key::NumOne) /* Front/back */
+        else if(event.key() == KeyEvent::Key::A) /* Front/back */
             transformation = Matrix4::rotationY(90.0_degf - 90.0_degf*multiplier);
-        else if(event.key() == KeyEvent::Key::NumThree) /* Right/left */
+        else if(event.key() == KeyEvent::Key::D) /* Right/left */
             transformation = Matrix4::rotationY(90.0_degf*multiplier);
         else CORRADE_ASSERT_UNREACHABLE();
 
@@ -357,7 +363,6 @@ void AppView::drawEvent() {
 
     _camera->draw(_drawables);
 
-    // std::cout << _timeline.previousFrameDuration() << std::endl;
     objectPosUpdate(_timeline.previousFrameDuration());
 
     swapBuffers();
