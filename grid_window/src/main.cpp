@@ -56,6 +56,8 @@
 
 #include <iostream>
 #include <memory>
+#include <thread>
+#include <mutex>
 
 namespace Magnum {
 
@@ -74,7 +76,8 @@ class AppView: public Platform::Application {
         explicit AppView(const Arguments& arguments);
 
     private:
-        void objectPosUpdate(const Float duration);
+        void setpAnimation(const Float duration);
+        void objectPosUpdate(Object3D* object, const Float duration);
 
         void addCube(const float length, const Matrix4& transformation, const Color4& color);
         // void addSephere(const int diameter, const Matrix4& transformation, const Color4& color);
@@ -104,6 +107,11 @@ class AppView: public Platform::Application {
         Float _lastDepth;
         Vector2i _lastPosition{-1};
         Vector3 _rotationPoint, _translationPoint;
+
+        bool _isAnimationPaused{false};
+        std::mutex _waitFlagMutex;
+        std::condition_variable _waitConditionVar;
+        bool _waitForWake{true};
 };
 
 class FlatDrawable: public SceneGraph::Drawable3D {
@@ -204,11 +212,30 @@ AppView::AppView(const Arguments& arguments): Platform::Application{arguments, N
     _lastDepth = ((_camera->projectionMatrix()*_camera->cameraMatrix()).transformPoint({}).z() + 1.0f)*0.5f;
 
     _timeline.start();
+
+    std::thread* t1 = new std::thread(
+        [&]{
+            while(1){
+                std::unique_lock<std::mutex> lock{_waitFlagMutex};
+                while(_waitForWake){
+                    _waitConditionVar.wait(lock);
+                }
+                std::cout << "execute thread! \n";
+                _waitForWake = true;
+            }
+        }
+    );
 }
 
-void AppView::objectPosUpdate(const Float duration){
-    Object3D* o = _scene.children().first();
-    o->translate(Vector3::xAxis(1.0f*duration));
+void AppView::setpAnimation(const Float duration){
+    if(!_isAnimationPaused){
+        Object3D* o = _scene.children().first();
+        objectPosUpdate(o, duration);
+    }
+}
+
+void AppView::objectPosUpdate(Object3D* object, const Float duration){
+    object->translate(Vector3::xAxis(1.0f*duration));
     // for(const auto& obj : _scene.children() ){
     //     auto val = obj.transformation().translation().dot();
     //     std::cout << val << " ";
@@ -257,7 +284,27 @@ void AppView::keyPressEvent(KeyEvent& event) {
 
     if(event.key() == KeyEvent::Key::S){
         std::cout << "keyPressEvent KeyEvent::Key::S event received\n";
+        _isAnimationPaused = !_isAnimationPaused;
+        std::unique_lock<std::mutex> lock{_waitFlagMutex};
+        _waitForWake = false;
+        _waitConditionVar.notify_one();
+        return;
     }
+
+    // if(event.key() == KeyEvent::Key::X){
+    //     std::cout << "keyPressEvent KeyEvent::Key::S event received\n";
+    //     std::thread t1(
+    //         [&]{
+    //             for(int i = 0; i < 10000; ++i){
+    //                 if(i%100 == 0){
+    //                     std::cout << i << "\n";
+    //                 }
+    //             }
+    //         }
+    //     );
+    //     return;
+    // }
+
     /* Reset the transformation to the original view */
     if(event.key() == KeyEvent::Key::Space) {
         std::cout << "keyPressEvent KeyEvent::Key::Space event received\n";
@@ -274,7 +321,6 @@ void AppView::keyPressEvent(KeyEvent& event) {
               event.key() == KeyEvent::Key::A ||
               event.key() == KeyEvent::Key::D)
     {
-        std::cout << "keyPressEvent KeyEvent::Key::1 2 3 event received\n";
         /* Start with current camera translation with the rotation inverted */
         const Vector3 viewTranslation = _cameraObject->transformation().rotationScaling().inverted()*_cameraObject->transformation().translation();
 
@@ -363,7 +409,7 @@ void AppView::drawEvent() {
 
     _camera->draw(_drawables);
 
-    objectPosUpdate(_timeline.previousFrameDuration());
+    setpAnimation(_timeline.previousFrameDuration());
 
     swapBuffers();
     _timeline.nextFrame();

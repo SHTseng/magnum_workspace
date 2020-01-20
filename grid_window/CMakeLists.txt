@@ -52,8 +52,8 @@ set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 include_directories(include)
 
-add_executable(magnum-mouseinteraction src/main.cpp)
-target_link_libraries(magnum-mouseinteraction PRIVATE
+add_executable(grid-world src/main.cpp)
+target_link_libraries(grid-world PRIVATE
     Corrade::Main
     Magnum::Application
     Magnum::GL
