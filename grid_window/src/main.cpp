@@ -205,10 +205,15 @@ AppView::AppView(const Arguments& arguments): Platform::Application{arguments, N
                 .setLightPosition({10.0f, 15.0f, 5.0f});
 
     /* Cubes */
+    std::cout << "print!\n";
+    std::cout << Matrix4::translation({0.0f,  0.0f, 0.0f}).translation().x() << "\n";
     _movableObject = addCube(0.1f, Matrix4::translation({0.0001f,  0.0001f, 0.0f}), 0xf7dc6f_rgbf);
-    addCube(0.25f, Matrix4::translation({ 0.0f,  10.0f, 0.0f}), 0xa5c9ea_rgbf);
-    addCube(0.5f, Matrix4::translation({10.0f,  0.0f, 0.0f}), 0xb0e7cc_rgbf);
-    addCube(0.5f, Matrix4::translation({0.0f,  0.0f, 10.0f}), 0xd7bde2_rgbf);
+    std::cout << _movableObject->transformation().translation().x() << "\n";
+    std::cout << _movableObject->transformation().translation().y() << "\n";
+
+    // addCube(0.25f, Matrix4::translation({ 0.0f,  10.0f, 0.0f}), 0xa5c9ea_rgbf);
+    // addCube(0.5f, Matrix4::translation({10.0f,  0.0f, 0.0f}), 0xb0e7cc_rgbf);
+    // addCube(0.5f, Matrix4::translation({0.0f,  0.0f, 10.0f}), 0xd7bde2_rgbf);
 
     /* Grid */
     _grid = MeshTools::compile(Primitives::grid3DWireframe({gridCount, gridCount}));
@@ -273,28 +278,40 @@ void AppView::setpAnimation(const Float duration){
     // if new path found, start update object pose
     if(!_isAnimationPaused && _trajectory.size() > 0){
         auto dirVec = _trajectory.front().MagnumVector() - _movableObject->transformation().translation();
-        std::cout << _movableObject->transformation().translation().x() << " " << _movableObject->transformation().translation().y() << "\n";
         // std::cout << _trajectory.front()._x << " " << _trajectory.front()._y << "\n";
-        // std::cout << dirVec.x() << " " << dirVec.y() << "\n";
+        // // std::cout << dirVec.x() << " " << dirVec.y() << "\n";
         if(dirVec.length() < 0.0001){
             _trajectory.front() = std::move(_trajectory.back());
             _trajectory.pop_back();
+            std::cout << "pop trajectory" << "\n";
         }
-        // std::cout << dirVec.length() << "\n";
         dirVec = dirVec.normalized();
         objectPosUpdate(_movableObject, dirVec, duration);
+        // std::cout << _movableObject->transformation().translation().x() << "\n";
     }
 }
 
 void AppView::objectPosUpdate(Object3D* object, const Vector3& dirVec, const Float duration){
-    const float vel = 0.5f; // 0.5 m/s
+    static const Float vel = 1.5f; // 0.5 m/s
+    std::cout << dirVec.x() << " " << dirVec.y() << " dirVec\n";
+
     // object->translate(Vector3::xAxis(vel*duration*dirVec.x()));
-    object->translate({vel*duration*dirVec.x(), vel*duration*dirVec.y(), 0.0f});
+    const Float dispX = vel*duration*dirVec.x();
+    const Float dispY = vel*duration*dirVec.y();
+    // std::cout << dispX << " " << dispY << " disp\n";
+    // Vector3 v = {0.0f, 0.0f, 0.0f};
+    // v.x() = dispX;
+    // v.y() = dispY;
+    object->translateLocal({dispX, dispY, 0.0f});
+    // object->translateLocal(v);
 }
 
 Object3D* AppView::addCube(const float length, const Matrix4& transformation, const Color4& color){
     Object3D* o = new Object3D{&_scene};
-    (*o).setTransformation(transformation).scale(Vector3(length));
+    // (*o).setTransformation(transformation).scale(Vector3(length));
+    (*o).translate(transformation.translation()).scale(Vector3(length));
+    std::cout << o->transformation().translation().x() << "\n";
+    std::cout << o->transformation().translation().y() << "\n";
 
     new CubeDrawable{*o, _phongShader, &_drawables, color};
     return o;
