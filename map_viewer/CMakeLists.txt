@@ -13,13 +13,20 @@ find_package(Magnum REQUIRED
     SceneGraph
     Shaders
     Sdl2Application)
+# find_package(OpenCV HINTS /usr/local/opt/opencv3)
+find_package(OpenCV REQUIRED)
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
-include_directories(include)
+include_directories(
+    include
+    ${OpenCV_INCLUDE_DIRS}
+)
 
 add_executable(map_viewer src/main.cpp)
-target_link_libraries(map_viewer PRIVATE
+target_link_libraries(map_viewer
+PRIVATE
+    ${OpenCV_LIBS}
     Corrade::Main
     Magnum::Application
     Magnum::GL
@@ -27,7 +34,8 @@ target_link_libraries(map_viewer PRIVATE
     Magnum::MeshTools
     Magnum::Primitives
     Magnum::SceneGraph
-    Magnum::Shaders)
+    Magnum::Shaders
+    )
 
 # install(TARGETS magnum-mouseinteraction DESTINATION ${MAGNUM_BINARY_INSTALL_DIR})
 
